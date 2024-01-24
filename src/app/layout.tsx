@@ -8,8 +8,16 @@ import { Toaster } from "react-hot-toast"
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "PDFReader",
-};
+  title: 'PDFReader',
+  icons: {
+    icon: [
+      {
+        url: '/bot.ico',
+        href: '/bot.ico',
+      },
+    ],
+  },
+}
 
 export default function RootLayout({
   children,

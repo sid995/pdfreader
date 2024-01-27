@@ -1,77 +1,80 @@
-import { Pinecone, Vector, utils as PineconeUtils } from "@pinecone-database/pinecone"
-import { Document, RecursiveCharacterTextSplitter } from "@pinecone-database/doc-splitter"
-import { downloadFromS3 } from "./s3Server"
+import { Pinecone, PineconeRecord } from "@pinecone-database/pinecone";
+import { downloadFromS3 } from "./s3Server";
 import { PDFLoader } from "langchain/document_loaders/fs/pdf";
+import md5 from "md5";
+import {
+  Document,
+  RecursiveCharacterTextSplitter,
+} from "@pinecone-database/doc-splitter";
 import { getEmbeddings } from "./embeddings";
-import md5 from 'md5'
 import { convertToAscii } from "./utils";
-
 type PDFPage = {
   pageContent: string;
   metadata: {
-    loc: { pageNumber: number }
-  }
-}
+    loc: { pageNumber: number };
+  };
+};
 
 export const getPineconeClient = () => {
   return new Pinecone({
     apiKey: process.env.PINECONE_API!,
     environment: process.env.PINECONE_REGION!,
-  })
-}
+  });
+};
 
 export async function loadS3IntoPinecone(fileKey: string) {
-  // download and read pdf
-  console.log('downloading s3 into file system')
-  const file_name = await downloadFromS3(fileKey)
-  console.log("file_name", file_name)
+  // 1. obtain the pdf -> downlaod and read from pdf
+  console.log("downloading s3 into file system");
+  const file_name = await downloadFromS3(fileKey);
   if (!file_name) {
-    throw new Error('couldn\'t download from s3')
+    throw new Error("could not download from s3");
   }
   console.log("loading pdf into memory" + file_name);
-  const loader = new PDFLoader(file_name)
-  const pages = (await loader.load()) as PDFPage[]
+  const loader = new PDFLoader(file_name);
+  const pages = (await loader.load()) as PDFPage[];
 
-  // split and segment pdf into smaller documents
-  const documents = await Promise.all(pages.map(prepareDocument))
+  // 2. split and segment the pdf
+  const documents = await Promise.all(pages.map(prepareDocument));
 
-  // vectorise and embed individual documents
-  const vectors = await Promise.all(documents.flat().map(embedDocument))
+  // 3. vectorise and embed individual documents
+  const vectors = await Promise.all(documents.flat().map(embedDocument));
 
-  // upload to pinecone
-  const client = await getPineconeClient()
-  const pineconeIndex = client.Index('pdfreader')
-  const namespace = convertToAscii(fileKey)
+  // 4. upload to pinecone
+  const client = await getPineconeClient();
+  const pineconeIndex = await client.index("pdfreader");
+  const namespace = pineconeIndex.namespace(convertToAscii(fileKey));
 
-  PineconeUtils.chunkedUpsert(pineconeIndex as any, vectors, namespace, 10)
+  console.log("inserting vectors into pinecone");
+  await namespace.upsert(vectors);
 
   return documents[0];
 }
 
 async function embedDocument(doc: Document) {
   try {
-    const embeddings = await getEmbeddings(doc.pageContent)
-    const hash = md5(doc.pageContent)
+    const embeddings = await getEmbeddings(doc.pageContent);
+    const hash = md5(doc.pageContent);
+
     return {
       id: hash,
       values: embeddings,
       metadata: {
         text: doc.metadata.text,
-        pageNumber: doc.metadata.pageNumber
-      }
-    } as Vector
+        pageNumber: doc.metadata.pageNumber,
+      },
+    } as PineconeRecord;
   } catch (error) {
-    console.log('error embedding documents', error)
-    throw error
+    console.log("error embedding document", error);
+    throw error;
   }
 }
 
+
 async function prepareDocument(page: PDFPage) {
-  let { pageContent, metadata } = page
-
-  pageContent = pageContent.replace(/\n/g, '')
-
-  const splitter = new RecursiveCharacterTextSplitter()
+  let { pageContent, metadata } = page;
+  pageContent = pageContent.replace(/\n/g, "");
+  // split the docs
+  const splitter = new RecursiveCharacterTextSplitter();
   const docs = await splitter.splitDocuments([
     new Document({
       pageContent,

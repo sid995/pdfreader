@@ -4,14 +4,24 @@ import { cn } from "@/lib/utils"
 
 type Props = {
   messages: Message[],
-  isLoading: boolean
+  isLoading: boolean,
+  queryFetchLoading: boolean
 }
 
-const MessageList = ({ messages, isLoading }: Props) => {
+
+const LoadingMessage = ({ msg }: { msg: string }) => {
+  return <p className="text-xs mt-1 py-1 px-3 text-gray-400">{msg}</p>
+}
+
+const MessageList = ({ messages, isLoading, queryFetchLoading }: Props) => {
   if (!messages) return <></>
 
+  if (queryFetchLoading) {
+    return <LoadingMessage msg="Loading previous chat" />
+  }
+
   return (
-    <div className="flex flex-col gap-2 px-4">
+    <div className="flex flex-col flex-1 gap-2 px-4 pb-3">
       {messages.map(message => (
         <div
           key={message.id}
@@ -27,7 +37,7 @@ const MessageList = ({ messages, isLoading }: Props) => {
           </div>
         </div>
       ))}
-      {isLoading && <p className="text-xs mt-1 py-1 px-3 text-gray-400">Response is being generated</p>}
+      {isLoading && <LoadingMessage msg="Response is being generated" />}
     </div>
   )
 }

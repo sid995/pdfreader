@@ -15,7 +15,6 @@ Introducing "PDFReader" – your gateway to a fluid document interaction environ
 - PostgreSQL
 - AWS SDK
 - OpenAI API
-- Stripe
 - Axios
 - Pinecone
 - Drizzle-kit

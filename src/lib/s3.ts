@@ -5,12 +5,12 @@ import AWS from "aws-sdk"
 export async function uploadToS3(file: File) {
   try {
     AWS.config.update({
-      accessKeyId: process.env.NEXT_PUBLIC_S3_ACCESS_KEY_ID,
-      secretAccessKey: process.env.NEXT_PUBLIC_S3_SECRET_ACCESS_KEY
+      accessKeyId: process.env.S3_ACCESS_KEY_ID,
+      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY
     })
     const s3 = new AWS.S3({
       params: {
-        Bucket: process.env.NEXT_PUBLIC_S3_BUCKET_NAME
+        Bucket: process.env.S3_BUCKET_NAME
       },
       region: 'us-east-2'
     })
@@ -18,7 +18,7 @@ export async function uploadToS3(file: File) {
     const file_key = 'uploads/' + Date.now().toString() + file.name.replace(' ', '-')
 
     const params = {
-      Bucket: process.env.NEXT_PUBLIC_S3_BUCKET_NAME!,
+      Bucket: process.env.S3_BUCKET_NAME!,
       Key: file_key,
       Body: file
     }
@@ -42,6 +42,6 @@ export async function uploadToS3(file: File) {
 }
 
 export function getS3URL(file_key: string) {
-  const url = `https://${process.env.NEXT_PUBLIC_S3_BUCKET_NAME}.s3.us-east-2.amazonaws.com/${file_key}`
+  const url = `https://${process.env.S3_BUCKET_NAME}.s3.us-east-2.amazonaws.com/${file_key}`
   return url
 }

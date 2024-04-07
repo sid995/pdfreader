@@ -10,7 +10,7 @@ export async function uploadToS3(file: File) {
     })
     const s3 = new AWS.S3({
       params: {
-        Bucket: process.env.NEXT_PUBLIC_S3_BUCKET_NAME
+        Bucket: process.env.NEXT_PUBLIC_S3_BUCKET_NAME!
       },
       region: 'us-east-2'
     })

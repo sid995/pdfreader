@@ -9,12 +9,12 @@ export async function downloadFromS3(file_key: string) {
     })
     const s3 = new AWS.S3({
       params: {
-        Bucket: process.env.NEXT_PUBLIC_S3_BUCKET_NAME
+        Bucket: process.env.NEXT_PUBLIC_S3_BUCKET_NAME!
       },
       region: 'us-east-2'
     })
     const params = {
-      Bucket: process.env.NEXT_PUBLIC_S3_BUCKET_NAME,
+      Bucket: process.env.NEXT_PUBLIC_S3_BUCKET_NAME!,
       Key: file_key
     }
     const obj = await s3.getObject(params as any).promise()
